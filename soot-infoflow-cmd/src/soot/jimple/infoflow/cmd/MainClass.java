@@ -49,6 +49,16 @@ import soot.jimple.infoflow.taintWrappers.TaintWrapperSet;
 import soot.util.HashMultiMap;
 import soot.util.MultiMap;
 
+import soot.*;
+import soot.jimple.Stmt;
+import soot.jimple.infoflow.android.InfoflowAndroidConfiguration;
+import soot.jimple.infoflow.results.InfoflowResults;
+import soot.jimple.toolkits.infoflow.InfoFlowAnalysis;
+import soot.toolkits.graph.BriefUnitGraph;
+import soot.toolkits.graph.HashMutableDirectedGraph;
+import soot.toolkits.graph.pdg.HashMutablePDG;
+import soot.util.queue.QueueReader;
+
 /**
  * Main class for running FlowDroid from the command-line
  * 
@@ -143,101 +153,101 @@ public class MainClass {
 		options.addOption(OPTION_CONFIG_FILE, "configfile", true, "Use the given configuration file");
 		options.addOption(OPTION_APK_FILE, "apkfile", true, "APK file to analyze");
 		options.addOption(OPTION_PLATFORMS_DIR, "platformsdir", true,
-				"Path to the platforms directory from the Android SDK");
+			"Path to the platforms directory from the Android SDK");
 		options.addOption(OPTION_SOURCES_SINKS_FILE, "sourcessinksfile", true, "Definition file for sources and sinks");
 		options.addOption(OPTION_OUTPUT_FILE, "outputfile", true, "Output XML file for the discovered data flows");
 		options.addOption(OPTION_ADDITIONAL_CLASSPATH, "additionalclasspath", true,
-				"Additional JAR file that shal be put on the classpath");
+			"Additional JAR file that shal be put on the classpath");
 		options.addOption(OPTION_SKIP_APK_FILE, "skipapkfile", true,
-				"APK file to skip when processing a directory of input files");
+			"APK file to skip when processing a directory of input files");
 		options.addOption(OPTION_WRITE_JIMPLE_FILES, "writejimplefiles", true, "Write out the Jimple files");
 
 		// Timeouts
 		options.addOption(OPTION_TIMEOUT, "timeout", true, "Timeout for the main data flow analysis");
 		options.addOption(OPTION_CALLBACK_TIMEOUT, "callbacktimeout", true,
-				"Timeout for the callback collection phase");
+			"Timeout for the callback collection phase");
 		options.addOption(OPTION_RESULT_TIMEOUT, "resulttimeout", true, "Timeout for the result collection phase");
 
 		// Optional features
 		options.addOption(OPTION_NO_STATIC_FLOWS, "nostatic", false, "Do not track static data flows");
 		options.addOption(OPTION_NO_CALLBACK_ANALYSIS, "nocallbacks", false, "Do not analyze Android callbacks");
 		options.addOption(OPTION_NO_EXCEPTIONAL_FLOWS, "noexceptions", false,
-				"Do not track taints across exceptional control flow edges");
+			"Do not track taints across exceptional control flow edges");
 		options.addOption(OPTION_NO_TYPE_CHECKING, "notypechecking", false,
-				"Disable type checking during taint propagation");
+			"Disable type checking during taint propagation");
 		options.addOption(OPTION_REFLECTION, "enablereflection", false, "Enable support for reflective method calls");
 		options.addOption(OPTION_MISSING_SUMMARIES_FILE, "missingsummariesoutputfile", true,
-				"Outputs a file with information about which summaries are missing");
+			"Outputs a file with information about which summaries are missing");
 		options.addOption(OPTION_OUTPUT_LINENUMBERS, "outputlinenumbers", false,
-				"Enable the output of bytecode line numbers associated with sources and sinks in XML results");
+			"Enable the output of bytecode line numbers associated with sources and sinks in XML results");
 		options.addOption(OPTION_ORIGINAL_NAMES, "originalnames", false,
-				"Enable the usage of original variablenames if available");
+			"Enable the usage of original variablenames if available");
 
 		// Taint wrapper
 		options.addOption(OPTION_TAINT_WRAPPER, "taintwrapper", true,
-				"Use the specified taint wrapper algorithm (NONE, EASY, STUBDROID, MULTI)");
+			"Use the specified taint wrapper algorithm (NONE, EASY, STUBDROID, MULTI)");
 		options.addOption(OPTION_TAINT_WRAPPER_FILE, "taintwrapperfile", true, "Definition file for the taint wrapper");
 
 		// Individual settings
 		options.addOption(OPTION_ACCESS_PATH_LENGTH, "aplength", true, "Maximum access path length");
 		options.addOption(OPTION_NO_THIS_CHAIN_REDUCTION, "nothischainreduction", false,
-				"Disable reduction of inner class chains");
+			"Disable reduction of inner class chains");
 		options.addOption(OPTION_FLOW_INSENSITIVE_ALIASING, "aliasflowins", false,
-				"Use a flow-insensitive alias analysis");
+			"Use a flow-insensitive alias analysis");
 		options.addOption(OPTION_COMPUTE_PATHS, "paths", false,
-				"Compute the taint propagation paths and not just source-to-sink connections. This is a shorthand notation for -pr fast.");
+			"Compute the taint propagation paths and not just source-to-sink connections. This is a shorthand notation for -pr fast.");
 		options.addOption(OPTION_LOG_SOURCES_SINKS, "logsourcesandsinks", false,
-				"Write the discovered sources and sinks to the log output");
+			"Write the discovered sources and sinks to the log output");
 		options.addOption("mt", "maxthreadnum", true, "Limit the maximum number of threads to the given value");
 		options.addOption(OPTION_ONE_COMPONENT, "onecomponentatatime", false,
-				"Analyze one Android component at a time");
+			"Analyze one Android component at a time");
 		options.addOption(OPTION_ONE_SOURCE, "onesourceatatime", false, "Analyze one source at a time");
 		options.addOption(OPTION_SEQUENTIAL_PATHS, "sequentialpathprocessing", false,
-				"Process the result paths sequentially instead of in parallel");
+			"Process the result paths sequentially instead of in parallel");
 		options.addOption(OPTION_SINGLE_JOIN_POINT, "singlejoinpointabstraction", false,
-				"Only use a single abstraction at join points, i.e., do not support multiple sources for one value");
+			"Only use a single abstraction at join points, i.e., do not support multiple sources for one value");
 		options.addOption(OPTION_MAX_CALLBACKS_COMPONENT, "maxcallbackspercomponent", true,
-				"Eliminate Android components that have more than the given number of callbacks");
+			"Eliminate Android components that have more than the given number of callbacks");
 		options.addOption(OPTION_MAX_CALLBACKS_DEPTH, "maxcallbacksdepth", true,
-				"Only analyze callback chains up to the given depth");
+			"Only analyze callback chains up to the given depth");
 		options.addOption(OPTION_MERGE_DEX_FILES, "mergedexfiles", false,
-				"Merge all dex files in the given APK file into one analysis target");
+			"Merge all dex files in the given APK file into one analysis target");
 		options.addOption(OPTION_PATH_SPECIFIC_RESULTS, "pathspecificresults", false,
-				"Report different results for same source/sink pairs if they differ in their propagation paths");
+			"Report different results for same source/sink pairs if they differ in their propagation paths");
 
 		// Inter-component communication
 		options.addOption(OPTION_ICC_MODEL, "iccmodel", true,
-				"File containing the inter-component data flow model (ICC model)");
+			"File containing the inter-component data flow model (ICC model)");
 		options.addOption(OPTION_ICC_NO_PURIFY, "noiccresultspurify", false,
-				"Do not purify the ICC results, i.e., do not remove simple flows that also have a corresponding ICC flow");
+			"Do not purify the ICC results, i.e., do not remove simple flows that also have a corresponding ICC flow");
 
 		// Modes and algorithms
 		options.addOption(OPTION_CALLGRAPH_ALGO, "cgalgo", true,
-				"Callgraph algorithm to use (AUTO, CHA, VTA, RTA, SPARK, GEOM)");
+			"Callgraph algorithm to use (AUTO, CHA, VTA, RTA, SPARK, GEOM)");
 		options.addOption(OPTION_LAYOUT_MODE, "layoutmode", true,
-				"Mode for considerung layout controls as sources (NONE, PWD, ALL)");
+			"Mode for considerung layout controls as sources (NONE, PWD, ALL)");
 		options.addOption(OPTION_PATH_RECONSTRUCTION_ALGO, "pathalgo", true,
-				"Use the specified algorithm for computing result paths (CONTEXTSENSITIVE, CONTEXTINSENSITIVE, SOURCESONLY)");
+			"Use the specified algorithm for computing result paths (CONTEXTSENSITIVE, CONTEXTINSENSITIVE, SOURCESONLY)");
 		options.addOption(OPTION_CALLBACK_ANALYZER, "callbackanalyzer", true,
-				"Use the specified callback analyzer (DEFAULT, FAST)");
+			"Use the specified callback analyzer (DEFAULT, FAST)");
 		options.addOption(OPTION_DATA_FLOW_SOLVER, "dataflowsolver", true,
-				"Use the specified data flow solver (CONTEXTFLOWSENSITIVE, FLOWINSENSITIVE)");
+			"Use the specified data flow solver (CONTEXTFLOWSENSITIVE, FLOWINSENSITIVE)");
 		options.addOption(OPTION_ALIAS_ALGO, "aliasalgo", true,
-				"Use the specified aliasing algorithm (NONE, FLOWSENSITIVE, PTSBASED, LAZY)");
+			"Use the specified aliasing algorithm (NONE, FLOWSENSITIVE, PTSBASED, LAZY)");
 		options.addOption(OPTION_CODE_ELIMINATION_MODE, "codeelimination", true,
-				"Use the specified code elimination algorithm (NONE, PROPAGATECONSTS, REMOVECODE)");
+			"Use the specified code elimination algorithm (NONE, PROPAGATECONSTS, REMOVECODE)");
 		options.addOption(OPTION_CALLBACK_SOURCE_MODE, "callbacksourcemode", true,
-				"Use the specified mode for defining which callbacks introduce which sources (NONE, ALL, SOURCELIST)");
+			"Use the specified mode for defining which callbacks introduce which sources (NONE, ALL, SOURCELIST)");
 		options.addOption(OPTION_PATH_RECONSTRUCTION_MODE, "pathreconstructionmode", true,
-				"Use the specified mode for reconstructing taint propagation paths (NONE, FAST, PRECISE).");
+			"Use the specified mode for reconstructing taint propagation paths (NONE, FAST, PRECISE).");
 		options.addOption(OPTION_IMPLICIT_FLOW_MODE, "implicit", true,
-				"Use the specified mode when processing implicit data flows (NONE, ARRAYONLY, ALL)");
+			"Use the specified mode when processing implicit data flows (NONE, ARRAYONLY, ALL)");
 		options.addOption(OPTION_STATIC_FLOW_TRACKING_MODE, "staticmode", true,
-				"Use the specified mode when tracking static data flows (CONTEXTFLOWSENSITIVE, CONTEXTFLOWINSENSITIVE, NONE)");
+			"Use the specified mode when tracking static data flows (CONTEXTFLOWSENSITIVE, CONTEXTFLOWINSENSITIVE, NONE)");
 
 		// Evaluation-specific options
 		options.addOption(OPTION_ANALYZE_FRAMEWORKS, "analyzeframeworks", false,
-				"Analyze the full frameworks together with the app without any optimizations");
+			"Analyze the full frameworks together with the app without any optimizations");
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -267,8 +277,8 @@ public class MainClass {
 			// Do we have a configuration file?
 			String configFile = cmd.getOptionValue(OPTION_CONFIG_FILE);
 			final InfoflowAndroidConfiguration config = configFile == null || configFile.isEmpty()
-					? new InfoflowAndroidConfiguration()
-					: loadConfigurationFile(configFile);
+			? new InfoflowAndroidConfiguration()
+			: loadConfigurationFile(configFile);
 			if (config == null)
 				return;
 
@@ -293,7 +303,7 @@ public class MainClass {
 
 				}));
 			} else
-				apksToAnalyze = Collections.singletonList(targetFile);
+			apksToAnalyze = Collections.singletonList(targetFile);
 
 			// In case we analyze multiple APKs, we want to have one file per app for the
 			// results
@@ -307,7 +317,7 @@ public class MainClass {
 						return;
 					}
 				} else if (apksToAnalyze.size() > 1)
-					outputFile.mkdirs();
+				outputFile.mkdirs();
 			}
 
 			// Initialize the taint wrapper. We only do this once for all apps to cache
@@ -318,11 +328,11 @@ public class MainClass {
 			for (File apkFile : apksToAnalyze) {
 				if (filesToSkip.contains(apkFile.getName())) {
 					logger.info(String.format("Skipping app %s (%d of %d)...", apkFile.getCanonicalPath(), curAppIdx++,
-							apksToAnalyze.size()));
+						apksToAnalyze.size()));
 					continue;
 				}
 				logger.info(String.format("Analyzing app %s (%d of %d)...", apkFile.getCanonicalPath(), curAppIdx++,
-						apksToAnalyze.size()));
+					apksToAnalyze.size()));
 
 				// Configure the analyzer for the current APK file
 				config.getAnalysisFileConfig().setTargetAPKFile(apkFile.getCanonicalPath());
@@ -350,6 +360,28 @@ public class MainClass {
 				// Start the data flow analysis
 				analyzer.runInfoflow();
 
+
+				for (SootClass sc : Scene.v().getApplicationClasses()) {
+					System.out.println("# sc root is: " + getRoot(sc).getName());
+					Set<String> srcSet = new HashSet<>();
+					Set<String> tgtSet = new HashSet<>();
+					for (SootMethod m : sc.getMethods()) {
+						if (m.hasActiveBody()) {
+							Body body = m.getActiveBody();
+							for (Unit u : body.getUnits()) {
+								Stmt stmt = (Stmt) u;
+								if (stmt.containsInvokeExpr()) {
+									SootMethod callee = stmt.getInvokeExpr().getMethod();
+									System.out.println(sc + " --> " + m.getName() + " --> " + callee.getName());
+									// System.out.println("" + m.getSignature());
+								}
+							}
+						}
+					}
+				}
+
+
+
 				if (reportMissingSummaryWrapper != null) {
 					String file = cmd.getOptionValue(OPTION_MISSING_SUMMARIES_FILE);
 					reportMissingSummaryWrapper.writeResults(new File(file));
@@ -365,6 +397,17 @@ public class MainClass {
 			e.printStackTrace();
 		}
 	}
+
+	private static SootClass getRoot(SootClass child)
+    {
+        if (child.getName().equals("android.app.Activity"))
+            return child;
+
+        if (child.hasSuperclass() && !child.getSuperclass().getName().equals("java.lang.Object"))
+            return getRoot(child.getSuperclass());
+        else
+            return child;
+    }
 
 	/**
 	 * Injects hierarchy data from StubDroid into Soot
@@ -463,22 +506,22 @@ public class MainClass {
 		ITaintPropagationWrapper result = null;
 		// Create the respective taint wrapper object
 		switch (taintWrapper.toLowerCase()) {
-		case "default":
+			case "default":
 			// We use StubDroid, but with the summaries from inside the JAR
 			// files
 			result = createSummaryTaintWrapper(cmd, new LazySummaryProvider("summariesManual"));
 			break;
-		case "defaultfallback":
+			case "defaultfallback":
 			// We use StubDroid, but with the summaries from inside the JAR
 			// files
 			SummaryTaintWrapper summaryWrapper = createSummaryTaintWrapper(cmd,
-					new LazySummaryProvider("summariesManual"));
+				new LazySummaryProvider("summariesManual"));
 			summaryWrapper.setFallbackTaintWrapper(EasyTaintWrapper.getDefault());
 			result = summaryWrapper;
 			break;
-		case "none":
+			case "none":
 			break;
-		case "easy":
+			case "easy":
 			// If the user has not specified a definition file for the easy
 			// taint wrapper, we try to locate a default file
 			String defFile = null;
@@ -490,26 +533,26 @@ public class MainClass {
 					} catch (Exception e) {
 						e.printStackTrace();
 						System.err.println(
-								"No definition file for the easy taint wrapper specified and could not find the default file");
+							"No definition file for the easy taint wrapper specified and could not find the default file");
 						throw new AbortAnalysisException();
 					}
 				} else
-					defFile = defaultFile.getCanonicalPath();
+				defFile = defaultFile.getCanonicalPath();
 			} else if (definitionFiles == null || definitionFiles.length != 1) {
 				System.err.println("Must specify exactly one definition file for the easy taint wrapper");
 				throw new AbortAnalysisException();
 			} else
-				defFile = definitionFiles[0];
+			defFile = definitionFiles[0];
 			result = new EasyTaintWrapper(defFile);
 			break;
-		case "stubdroid":
+			case "stubdroid":
 			if (definitionFiles == null || definitionFiles.length == 0) {
 				System.err.println("Must specify at least one definition file for StubDroid");
 				throw new AbortAnalysisException();
 			}
 			result = TaintWrapperFactory.createTaintWrapper(Arrays.asList(definitionFiles));
 			break;
-		case "multi":
+			case "multi":
 			// We need explicit definition files
 			if (definitionFiles == null || definitionFiles.length == 0) {
 				System.err.println("Must explicitly specify the definition files for the multi mode");
@@ -552,7 +595,7 @@ public class MainClass {
 			}
 			result = wrapperSet;
 			break;
-		default:
+			default:
 			System.err.println("Invalid taint propagation wrapper specified, ignoring.");
 			throw new AbortAnalysisException();
 		}
@@ -565,7 +608,7 @@ public class MainClass {
 			reportMissingSummaryWrapper = new ReportMissingSummaryWrapper(lazySummaryProvider);
 			return reportMissingSummaryWrapper;
 		} else
-			return new SummaryTaintWrapper(lazySummaryProvider);
+		return new SummaryTaintWrapper(lazySummaryProvider);
 	}
 
 	private static CallgraphAlgorithm parseCallgraphAlgorithm(String algo) {

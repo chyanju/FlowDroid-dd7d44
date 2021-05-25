@@ -1,4 +1,4 @@
-[![Build Status](https://soot-build.cs.uni-paderborn.de/jenkins/job/flowdroid/job/FlowDroid_DEVELOP/badge/icon)](https://soot-build.cs.uni-paderborn.de/jenkins/job/flowdroid/job/FlowDroid_DEVELOP/)
+**<u>*(Note: This version has customized commandline functionalities.)*</u>**
 
 # FlowDroid Data Flow Analysis Tool
 
